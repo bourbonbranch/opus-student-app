@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { Stack, Link } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -34,7 +34,7 @@ export default function Login() {
             <Stack.Screen options={{ headerShown: false }} />
             <StatusBar style="light" />
 
-            <View style={styles.content}>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.header}>
                     <Text style={styles.title}>Opus</Text>
                     <Text style={styles.subtitle}>Student Portal</Text>
@@ -87,7 +87,7 @@ export default function Login() {
                         </TouchableOpacity>
                     </Link>
                 </View>
-            </View>
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }
@@ -97,10 +97,11 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#0f172a', // Slate 900
     },
-    content: {
-        flex: 1,
+    scrollContent: {
+        flexGrow: 1,
         justifyContent: 'center',
         padding: 24,
+        paddingBottom: 40,
     },
     header: {
         marginBottom: 48,
