@@ -15,6 +15,7 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
+    signUp: (data: any) => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -58,6 +59,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const signUp = async (data: any) => {
+        try {
+            const response = await client.post('/auth/signup', data);
+            const userData = response.data;
+
+            // Store session
+            await SecureStore.setItemAsync('user_session', JSON.stringify(userData));
+            setUser(userData);
+
+            router.replace('/(tabs)');
+        } catch (error) {
+            console.error('Sign up failed:', error);
+            throw error;
+        }
+    };
+
     const signOut = async () => {
         try {
             await SecureStore.deleteItemAsync('user_session');
@@ -69,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, signIn, signOut }}>
+        <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
             {children}
         </AuthContext.Provider>
     );

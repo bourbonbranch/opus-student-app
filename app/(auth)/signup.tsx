@@ -1,26 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { Stack, Link } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
-export default function Login() {
+export default function SignUp() {
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signIn } = useAuth();
+    const { signUp } = useAuth();
 
-    const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password');
+    const handleSignUp = async () => {
+        if (!firstName || !lastName || !email || !password) {
+            Alert.alert('Error', 'Please fill in all fields');
             return;
         }
 
         setLoading(true);
         try {
-            await signIn(email, password);
+            await signUp({ firstName, lastName, email, password });
         } catch (error: any) {
-            Alert.alert('Login Failed', error.response?.data?.error || 'Invalid email or password');
+            Alert.alert('Sign Up Failed', error.response?.data?.error || 'Failed to create account');
         } finally {
             setLoading(false);
         }
@@ -34,13 +36,36 @@ export default function Login() {
             <Stack.Screen options={{ headerShown: false }} />
             <StatusBar style="light" />
 
-            <View style={styles.content}>
+            <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Opus</Text>
-                    <Text style={styles.subtitle}>Student Portal</Text>
+                    <Text style={styles.title}>Create Account</Text>
+                    <Text style={styles.subtitle}>Join your ensemble</Text>
                 </View>
 
                 <View style={styles.form}>
+                    <View style={styles.row}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
+                            <Text style={styles.label}>First Name</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="First Name"
+                                placeholderTextColor="#666"
+                                value={firstName}
+                                onChangeText={setFirstName}
+                            />
+                        </View>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
+                            <Text style={styles.label}>Last Name</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Last Name"
+                                placeholderTextColor="#666"
+                                value={lastName}
+                                onChangeText={setLastName}
+                            />
+                        </View>
+                    </View>
+
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Email</Text>
                         <TextInput
@@ -58,7 +83,7 @@ export default function Login() {
                         <Text style={styles.label}>Password</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Enter your password"
+                            placeholder="Create a password"
                             placeholderTextColor="#666"
                             value={password}
                             onChangeText={setPassword}
@@ -68,26 +93,26 @@ export default function Login() {
 
                     <TouchableOpacity
                         style={styles.button}
-                        onPress={handleLogin}
+                        onPress={handleSignUp}
                         disabled={loading}
                     >
                         {loading ? (
                             <ActivityIndicator color="#fff" />
                         ) : (
-                            <Text style={styles.buttonText}>Sign In</Text>
+                            <Text style={styles.buttonText}>Sign Up</Text>
                         )}
                     </TouchableOpacity>
-                </View>
 
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>Don't have an account? </Text>
-                    <Link href="/(auth)/signup" asChild>
-                        <TouchableOpacity>
-                            <Text style={styles.link}>Sign Up</Text>
-                        </TouchableOpacity>
-                    </Link>
+                    <View style={styles.footer}>
+                        <Text style={styles.footerText}>Already have an account? </Text>
+                        <Link href="/(auth)/login" asChild>
+                            <TouchableOpacity>
+                                <Text style={styles.link}>Sign In</Text>
+                            </TouchableOpacity>
+                        </Link>
+                    </View>
                 </View>
-            </View>
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }
@@ -98,26 +123,30 @@ const styles = StyleSheet.create({
         backgroundColor: '#0f172a', // Slate 900
     },
     content: {
-        flex: 1,
+        flexGrow: 1,
         justifyContent: 'center',
         padding: 24,
     },
     header: {
-        marginBottom: 48,
+        marginBottom: 32,
         alignItems: 'center',
     },
     title: {
-        fontSize: 42,
+        fontSize: 32,
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: 8,
     },
     subtitle: {
-        fontSize: 18,
+        fontSize: 16,
         color: '#94a3b8', // Slate 400
     },
     form: {
         gap: 20,
+    },
+    row: {
+        flexDirection: 'row',
+        gap: 16,
     },
     inputGroup: {
         gap: 8,
@@ -151,7 +180,7 @@ const styles = StyleSheet.create({
     footer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 24,
+        marginTop: 16,
     },
     footerText: {
         color: '#94a3b8',
