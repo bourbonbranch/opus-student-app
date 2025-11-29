@@ -1,14 +1,16 @@
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { FontAwesome } from '@expo/vector-icons';
 import { useState, useEffect, useCallback } from 'react';
 import client from '../../src/api/client';
 import { format } from 'date-fns';
+import { useBeaconScanner } from '../../src/hooks/useBeaconScanner';
 
 export default function Home() {
     const { user, ensembles } = useAuth();
     const [nextRehearsal, setNextRehearsal] = useState<any>(null);
     const [refreshing, setRefreshing] = useState(false);
+    const { isScanning, lastCheckIn, error: scanError, forceCheckIn } = useBeaconScanner();
 
     const fetchNextRehearsal = useCallback(async () => {
         if (ensembles.length === 0) {
@@ -106,6 +108,66 @@ export default function Home() {
                                 </Text>
                             </View>
                         ))}
+                    </View>
+
+                    {/* Auto-Attendance Status */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Auto Check-In</Text>
+                        <View style={[styles.card, { backgroundColor: isScanning ? '#10b98120' : '#6b728020' }]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                <FontAwesome
+                                    name={isScanning ? "bluetooth" : "bluetooth-b"}
+                                    size={20}
+                                    color={isScanning ? "#10b981" : "#6b7280"}
+                                />
+                                <Text style={[styles.cardTitle, { marginLeft: 8, marginBottom: 0 }]}>
+                                    {isScanning ? "Scanning for beacons..." : "Not scanning"}
+                                </Text>
+                            </View>
+
+                            {lastCheckIn && (
+                                <View style={{ marginTop: 8, padding: 12, backgroundColor: '#10b98110', borderRadius: 8 }}>
+                                    <Text style={{ color: '#10b981', fontWeight: '600', marginBottom: 4 }}>
+                                        ✅ Last Check-In
+                                    </Text>
+                                    <Text style={{ color: '#fff', fontSize: 14 }}>
+                                        {lastCheckIn.event}
+                                    </Text>
+                                    <Text style={{ color: '#9ca3af', fontSize: 12, marginTop: 4 }}>
+                                        {lastCheckIn.timestamp.toLocaleTimeString()}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {scanError && (
+                                <Text style={{ color: '#ef4444', fontSize: 12, marginTop: 8 }}>
+                                    {scanError}
+                                </Text>
+                            )}
+
+                            {/* Test Button for Simulator */}
+                            <TouchableOpacity
+                                style={{
+                                    marginTop: 12,
+                                    padding: 12,
+                                    backgroundColor: '#3b82f6',
+                                    borderRadius: 8,
+                                    alignItems: 'center'
+                                }}
+                                onPress={async () => {
+                                    try {
+                                        await forceCheckIn();
+                                        Alert.alert('Success', 'Check-in successful!');
+                                    } catch (err: any) {
+                                        Alert.alert('Error', err.message);
+                                    }
+                                }}
+                            >
+                                <Text style={{ color: '#fff', fontWeight: '600' }}>
+                                    Test Check-In (Simulator)
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <View style={styles.section}>
