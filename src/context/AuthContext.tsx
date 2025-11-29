@@ -16,6 +16,8 @@ interface Ensemble {
     name: string;
     ensemble_id: number;
     ensemble_name: string;
+    section?: string;
+    part?: string;
 }
 
 interface AuthContextType {
