@@ -1,26 +1,118 @@
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../src/context/AuthContext';
+import client from '../../src/api/client';
+import { format } from 'date-fns';
 
-const MOCK_REHEARSALS = [
-    { id: '1', title: 'Chamber Choir', date: 'Tomorrow', time: '7:00 PM - 9:00 PM', location: 'Main Hall' },
-    { id: '2', title: 'Sectionals', date: 'Wed, Nov 29', time: '6:00 PM - 7:30 PM', location: 'Room 204' },
-    { id: '3', title: 'Full Rehearsal', date: 'Fri, Dec 1', time: '7:00 PM - 9:30 PM', location: 'Main Hall' },
-];
+interface Rehearsal {
+    id: number;
+    ensemble_id: number;
+    date: string;
+    start_time: string;
+    end_time: string;
+    location: string;
+    description: string;
+    type: string;
+}
 
 export default function Rehearsals() {
+    const { ensembles } = useAuth();
+    const [rehearsals, setRehearsals] = useState<Rehearsal[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const fetchRehearsals = useCallback(async () => {
+        if (ensembles.length === 0) {
+            setRehearsals([]);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const allRehearsals: Rehearsal[] = [];
+
+            // Fetch rehearsals for each ensemble
+            for (const ensemble of ensembles) {
+                const response = await client.get(`/api/students/rehearsals?ensembleId=${ensemble.ensemble_id}`);
+                const ensembleRehearsals = response.data.map((r: any) => ({
+                    ...r,
+                    ensemble_name: ensemble.ensemble_name // Add ensemble name to display
+                }));
+                allRehearsals.push(...ensembleRehearsals);
+            }
+
+            // Sort by date and time
+            allRehearsals.sort((a, b) => {
+                const dateA = new Date(a.date + 'T' + a.start_time);
+                const dateB = new Date(b.date + 'T' + b.start_time);
+                return dateA.getTime() - dateB.getTime();
+            });
+
+            setRehearsals(allRehearsals);
+        } catch (error) {
+            console.error('Failed to fetch rehearsals:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, [ensembles]);
+
+    useEffect(() => {
+        fetchRehearsals();
+    }, [fetchRehearsals]);
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchRehearsals();
+    }, [fetchRehearsals]);
+
+    const formatTime = (time: string) => {
+        if (!time) return '';
+        const [hours, minutes] = time.split(':');
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes));
+        return format(date, 'h:mm a');
+    };
+
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        return format(new Date(dateStr), 'EEE, MMM d');
+    };
+
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.center]}>
+                <ActivityIndicator size="large" color="#3b82f6" />
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <FlatList
-                data={MOCK_REHEARSALS}
-                keyExtractor={(item) => item.id}
+                data={rehearsals}
+                keyExtractor={(item) => `${item.id}-${item.ensemble_id}`}
                 contentContainerStyle={styles.list}
-                renderItem={({ item }) => (
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                }
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>No upcoming rehearsals</Text>
+                    </View>
+                }
+                renderItem={({ item }: { item: Rehearsal & { ensemble_name?: string } }) => (
                     <View style={styles.card}>
                         <View style={styles.dateBox}>
-                            <Text style={styles.dateText}>{item.date.split(',')[0]}</Text>
+                            <Text style={styles.dateText}>{formatDate(item.date).split(',')[0]}</Text>
+                            <Text style={styles.dayText}>{new Date(item.date).getDate()}</Text>
                         </View>
                         <View style={styles.info}>
-                            <Text style={styles.title}>{item.title}</Text>
-                            <Text style={styles.time}>{item.time}</Text>
+                            <Text style={styles.ensembleName}>{item.ensemble_name}</Text>
+                            <Text style={styles.title}>{item.type || 'Rehearsal'}</Text>
+                            <Text style={styles.time}>
+                                {formatTime(item.start_time)} - {formatTime(item.end_time)}
+                            </Text>
                             <Text style={styles.location}>{item.location}</Text>
                         </View>
                     </View>
@@ -34,6 +126,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#0f172a',
+    },
+    center: {
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     list: {
         padding: 20,
@@ -51,20 +147,33 @@ const styles = StyleSheet.create({
     },
     dateBox: {
         backgroundColor: '#3b82f6',
-        padding: 12,
+        padding: 8,
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
         width: 60,
+        height: 60,
     },
     dateText: {
         color: '#fff',
         fontWeight: 'bold',
-        fontSize: 12,
-        textAlign: 'center',
+        fontSize: 14,
+        textTransform: 'uppercase',
+    },
+    dayText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 18,
     },
     info: {
         flex: 1,
+    },
+    ensembleName: {
+        fontSize: 12,
+        color: '#94a3b8',
+        marginBottom: 2,
+        textTransform: 'uppercase',
+        fontWeight: '600',
     },
     title: {
         fontSize: 16,
@@ -74,11 +183,19 @@ const styles = StyleSheet.create({
     },
     time: {
         fontSize: 14,
-        color: '#94a3b8',
+        color: '#cbd5e1',
         marginBottom: 2,
     },
     location: {
         fontSize: 12,
         color: '#64748b',
+    },
+    emptyContainer: {
+        padding: 40,
+        alignItems: 'center',
+    },
+    emptyText: {
+        color: '#94a3b8',
+        fontSize: 16,
     },
 });

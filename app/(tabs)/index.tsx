@@ -1,12 +1,91 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useAuth } from '../../src/context/AuthContext';
 import { FontAwesome } from '@expo/vector-icons';
+import { useState, useEffect, useCallback } from 'react';
+import client from '../../src/api/client';
+import { format } from 'date-fns';
 
 export default function Home() {
     const { user, ensembles } = useAuth();
+    const [nextRehearsal, setNextRehearsal] = useState<any>(null);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const fetchNextRehearsal = useCallback(async () => {
+        if (ensembles.length === 0) {
+            setNextRehearsal(null);
+            return;
+        }
+
+        try {
+            const allRehearsals: any[] = [];
+
+            for (const ensemble of ensembles) {
+                const response = await client.get(`/api/students/rehearsals?ensembleId=${ensemble.ensemble_id}`);
+                const ensembleRehearsals = response.data.map((r: any) => ({
+                    ...r,
+                    ensemble_name: ensemble.ensemble_name
+                }));
+                allRehearsals.push(...ensembleRehearsals);
+            }
+
+            allRehearsals.sort((a, b) => {
+                const dateA = new Date(a.date + 'T' + a.start_time);
+                const dateB = new Date(b.date + 'T' + b.start_time);
+                return dateA.getTime() - dateB.getTime();
+            });
+
+            if (allRehearsals.length > 0) {
+                setNextRehearsal(allRehearsals[0]);
+            } else {
+                setNextRehearsal(null);
+            }
+        } catch (error) {
+            console.error('Failed to fetch next rehearsal:', error);
+        } finally {
+            setRefreshing(false);
+        }
+    }, [ensembles]);
+
+    useEffect(() => {
+        fetchNextRehearsal();
+    }, [fetchNextRehearsal]);
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchNextRehearsal();
+    }, [fetchNextRehearsal]);
+
+    const formatTime = (time: string) => {
+        if (!time) return '';
+        const [hours, minutes] = time.split(':');
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes));
+        return format(date, 'h:mm a');
+    };
+
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today';
+        } else if (date.toDateString() === tomorrow.toDateString()) {
+            return 'Tomorrow';
+        } else {
+            return format(date, 'EEE, MMM d');
+        }
+    };
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView
+            style={styles.container}
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+            }
+        >
             <View style={styles.header}>
                 <Text style={styles.greeting}>Welcome back,</Text>
                 <Text style={styles.name}>{user?.firstName}</Text>
@@ -31,9 +110,25 @@ export default function Home() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Next Rehearsal</Text>
                         <View style={styles.card}>
-                            <Text style={styles.cardBody}>
-                                Check the Rehearsals tab for upcoming sessions
-                            </Text>
+                            {nextRehearsal ? (
+                                <>
+                                    <View style={styles.cardHeader}>
+                                        <FontAwesome name="calendar" size={20} color="#3b82f6" />
+                                        <Text style={styles.cardDate}>
+                                            {formatDate(nextRehearsal.date)}, {formatTime(nextRehearsal.start_time)}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.cardTitle}>{nextRehearsal.type || 'Rehearsal'}</Text>
+                                    <Text style={styles.cardSubtitle}>{nextRehearsal.location}</Text>
+                                    <Text style={[styles.cardSubtitle, { marginTop: 4, color: '#94a3b8' }]}>
+                                        {nextRehearsal.ensemble_name}
+                                    </Text>
+                                </>
+                            ) : (
+                                <Text style={styles.cardBody}>
+                                    No upcoming rehearsals scheduled.
+                                </Text>
+                            )}
                         </View>
                     </View>
                 </>
