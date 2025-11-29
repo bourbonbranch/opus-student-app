@@ -89,6 +89,7 @@ export default function Home() {
             <View style={styles.header}>
                 <Text style={styles.greeting}>Welcome back,</Text>
                 <Text style={styles.name}>{user?.firstName}</Text>
+                <Text style={{ color: 'yellow', fontSize: 12 }}>Debug: {user?.email}</Text>
             </View>
 
             {ensembles.length > 0 ? (

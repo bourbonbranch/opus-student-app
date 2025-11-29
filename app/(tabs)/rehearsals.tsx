@@ -66,17 +66,22 @@ export default function Rehearsals() {
         fetchRehearsals();
     }, [fetchRehearsals]);
 
-    const formatTime = (time: string) => {
-        if (!time) return '';
-        const [hours, minutes] = time.split(':');
-        const date = new Date();
-        date.setHours(parseInt(hours), parseInt(minutes));
-        return format(date, 'h:mm a');
+    const formatTime = (dateStr: string) => {
+        if (!dateStr) return '';
+        try {
+            return format(new Date(dateStr), 'h:mm a');
+        } catch {
+            return '';
+        }
     };
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return '';
-        return format(new Date(dateStr), 'EEE, MMM d');
+        try {
+            return format(new Date(dateStr), 'EEE, MMM d');
+        } catch {
+            return '';
+        }
     };
 
     if (loading) {
@@ -109,11 +114,9 @@ export default function Rehearsals() {
                         </View>
                         <View style={styles.info}>
                             <Text style={styles.ensembleName}>{item.ensemble_name}</Text>
-                            <Text style={styles.title}>{item.type || 'Rehearsal'}</Text>
-                            <Text style={styles.time}>
-                                {formatTime(item.start_time)} - {formatTime(item.end_time)}
-                            </Text>
-                            <Text style={styles.location}>{item.location}</Text>
+                            <Text style={styles.title}>{(item as any).title || item.type || 'Rehearsal'}</Text>
+                            <Text style={styles.time}>{formatTime(item.date)}</Text>
+                            <Text style={styles.location}>{item.location || item.description || ''}</Text>
                         </View>
                     </View>
                 )}
