@@ -57,7 +57,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const fetchEnsembles = async (email: string) => {
         try {
             const response = await client.get(`/api/students/me?email=${encodeURIComponent(email)}`);
-            setEnsembles(response.data || []);
+            const data = response.data;
+
+            // API returns { ensembles: [...] } or { ensembles: [], message: '...' }
+            if (data.ensembles && Array.isArray(data.ensembles)) {
+                // Map API response to our Ensemble interface
+                const mappedEnsembles = data.ensembles.map((e: any) => ({
+                    id: e.studentInfo?.id || e.id,
+                    name: e.studentInfo?.firstName + ' ' + e.studentInfo?.lastName || '',
+                    ensemble_id: e.ensembleId,
+                    ensemble_name: e.ensembleName,
+                    section: e.studentInfo?.section,
+                    part: e.studentInfo?.part,
+                }));
+                setEnsembles(mappedEnsembles);
+            } else {
+                setEnsembles([]);
+            }
         } catch (error) {
             console.error('Failed to fetch ensembles:', error);
             setEnsembles([]);
