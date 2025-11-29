@@ -3,6 +3,7 @@
     "name": "opus-student-app",
     "slug": "opus-student-app",
     "owner": "jcochran1",
+    "scheme": "opusstudent",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
