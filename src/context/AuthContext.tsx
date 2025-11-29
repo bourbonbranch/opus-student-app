@@ -11,8 +11,16 @@ interface User {
     role: string;
 }
 
+interface Ensemble {
+    id: number;
+    name: string;
+    ensemble_id: number;
+    ensemble_name: string;
+}
+
 interface AuthContextType {
     user: User | null;
+    ensembles: Ensemble[];
     isLoading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
     signUp: (data: any) => Promise<void>;
@@ -23,6 +31,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
+    const [ensembles, setEnsembles] = useState<Ensemble[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -43,6 +52,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const fetchEnsembles = async (email: string) => {
+        try {
+            const response = await client.get(`/api/students/me?email=${encodeURIComponent(email)}`);
+            setEnsembles(response.data || []);
+        } catch (error) {
+            console.error('Failed to fetch ensembles:', error);
+            setEnsembles([]);
+        }
+    };
+
     const signIn = async (email: string, password: string) => {
         try {
             const response = await client.post('/auth/login', { email, password });
@@ -51,6 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Store session
             await SecureStore.setItemAsync('user_session', JSON.stringify(userData));
             setUser(userData);
+
+            // Fetch student's ensembles
+            await fetchEnsembles(userData.email);
 
             router.replace('/(tabs)');
         } catch (error) {
@@ -67,6 +89,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Store session
             await SecureStore.setItemAsync('user_session', JSON.stringify(userData));
             setUser(userData);
+
+            // Fetch student's ensembles
+            await fetchEnsembles(userData.email);
 
             router.replace('/(tabs)');
         } catch (error) {
@@ -86,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{ user, ensembles, isLoading, signIn, signUp, signOut }}>
             {children}
         </AuthContext.Provider>
     );

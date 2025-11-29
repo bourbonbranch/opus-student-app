@@ -3,7 +3,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function Home() {
-    const { user } = useAuth();
+    const { user, ensembles } = useAuth();
 
     return (
         <ScrollView style={styles.container}>
@@ -12,27 +12,42 @@ export default function Home() {
                 <Text style={styles.name}>{user?.firstName}</Text>
             </View>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Next Rehearsal</Text>
-                <View style={styles.card}>
-                    <View style={styles.cardHeader}>
-                        <FontAwesome name="calendar" size={20} color="#3b82f6" />
-                        <Text style={styles.cardDate}>Tomorrow, 7:00 PM</Text>
+            {ensembles.length > 0 ? (
+                <>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Your Ensembles</Text>
+                        {ensembles.map((ensemble) => (
+                            <View key={ensemble.id} style={[styles.card, { marginBottom: 12 }]}>
+                                <Text style={styles.cardTitle}>{ensemble.ensemble_name}</Text>
+                                <Text style={styles.cardSubtitle}>
+                                    {ensemble.section && ensemble.part
+                                        ? `${ensemble.section} - ${ensemble.part}`
+                                        : ensemble.section || ensemble.part || 'Member'}
+                                </Text>
+                            </View>
+                        ))}
                     </View>
-                    <Text style={styles.cardTitle}>Chamber Choir Rehearsal</Text>
-                    <Text style={styles.cardSubtitle}>Main Hall</Text>
-                </View>
-            </View>
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Announcements</Text>
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Concert Dress Fitting</Text>
-                    <Text style={styles.cardBody}>
-                        Please remember to bring your concert shoes for the fitting this Thursday.
-                    </Text>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Next Rehearsal</Text>
+                        <View style={styles.card}>
+                            <Text style={styles.cardBody}>
+                                Check the Rehearsals tab for upcoming sessions
+                            </Text>
+                        </View>
+                    </View>
+                </>
+            ) : (
+                <View style={styles.section}>
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>No Ensembles Found</Text>
+                        <Text style={styles.cardBody}>
+                            Your account hasn't been linked to any ensembles yet.
+                            Make sure your director has added your email to the roster.
+                        </Text>
+                    </View>
                 </View>
-            </View>
+            )}
         </ScrollView>
     );
 }
