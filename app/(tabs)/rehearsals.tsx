@@ -7,9 +7,9 @@ import { format } from 'date-fns';
 interface Rehearsal {
     id: number;
     ensemble_id: number;
-    date: string;
-    start_time: string;
-    end_time: string;
+    // date: string; // Deprecated
+    start_time: string; // ISO string
+    end_time: string; // ISO string
     location: string;
     description: string;
     type: string;
@@ -43,8 +43,8 @@ export default function Rehearsals() {
 
             // Sort by date and time
             allRehearsals.sort((a, b) => {
-                const dateA = new Date(a.date + 'T' + a.start_time);
-                const dateB = new Date(b.date + 'T' + b.start_time);
+                const dateA = new Date(a.start_time);
+                const dateB = new Date(b.start_time);
                 return dateA.getTime() - dateB.getTime();
             });
 
@@ -109,13 +109,13 @@ export default function Rehearsals() {
                 renderItem={({ item }: { item: Rehearsal & { ensemble_name?: string } }) => (
                     <View style={styles.card}>
                         <View style={styles.dateBox}>
-                            <Text style={styles.dateText}>{formatDate(item.date).split(',')[0]}</Text>
-                            <Text style={styles.dayText}>{new Date(item.date).getDate()}</Text>
+                            <Text style={styles.dateText}>{formatDate(item.start_time).split(',')[0]}</Text>
+                            <Text style={styles.dayText}>{new Date(item.start_time).getDate()}</Text>
                         </View>
                         <View style={styles.info}>
                             <Text style={styles.ensembleName}>{item.ensemble_name}</Text>
                             <Text style={styles.title}>{(item as any).title || item.type || 'Rehearsal'}</Text>
-                            <Text style={styles.time}>{formatTime(item.date)}</Text>
+                            <Text style={styles.time}>{formatTime(item.start_time)}</Text>
                             <Text style={styles.location}>{item.location || item.description || ''}</Text>
                         </View>
                     </View>

@@ -31,8 +31,8 @@ export default function Home() {
             }
 
             allRehearsals.sort((a, b) => {
-                const dateA = new Date(a.date + 'T' + a.start_time);
-                const dateB = new Date(b.date + 'T' + b.start_time);
+                const dateA = new Date(a.start_time);
+                const dateB = new Date(b.start_time);
                 return dateA.getTime() - dateB.getTime();
             });
 
@@ -59,10 +59,11 @@ export default function Home() {
 
     const formatTime = (time: string) => {
         if (!time) return '';
-        const [hours, minutes] = time.split(':');
-        const date = new Date();
-        date.setHours(parseInt(hours), parseInt(minutes));
-        return format(date, 'h:mm a');
+        try {
+            return format(new Date(time), 'h:mm a');
+        } catch {
+            return '';
+        }
     };
 
     const formatDate = (dateStr: string) => {
@@ -178,7 +179,7 @@ export default function Home() {
                                     <View style={styles.cardHeader}>
                                         <FontAwesome name="calendar" size={20} color="#3b82f6" />
                                         <Text style={styles.cardDate}>
-                                            {formatDate(nextRehearsal.date)}, {formatTime(nextRehearsal.start_time)}
+                                            {formatDate(nextRehearsal.start_time)}, {formatTime(nextRehearsal.start_time)}
                                         </Text>
                                     </View>
                                     <Text style={styles.cardTitle}>{nextRehearsal.type || 'Rehearsal'}</Text>
